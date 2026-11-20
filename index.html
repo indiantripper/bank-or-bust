@@ -6,8 +6,8 @@
 <title>Bank or bust</title>
 <meta name="description" content="Eat, grow, lock it in, and become the thing that hunted you. A one-thumb ocean game.">
 <style>
-:root{--bg:#FAF9F5;--card:#FFFFFF;--tint:#F1EFE8;--text:#1F1E1D;--text2:#5F5E5A;--border:rgba(0,0,0,.14);--ok:#1D9E75;--risk:#EF9F27;--btn:#1F1E1D;--btnText:#FFFFFF}
-@media (prefers-color-scheme:dark){:root{--bg:#1F1E1D;--card:#2C2C2A;--tint:#2C2C2A;--text:#F1EFE8;--text2:#B4B2A9;--border:rgba(255,255,255,.16);--ok:#5DCAA5;--risk:#FAC775;--btn:#F1EFE8;--btnText:#1F1E1D}}
+:root{--bg:#FAF9F5;--card:#FFFFFF;--tint:#F1EFE8;--text:#1F1E1D;--text2:#5F5E5A;--border:rgba(0,0,0,.14);--ok:#1D9E75;--risk:#EF9F27;--btn:#1F1E1D;--btnText:#FFFFFF;--water:#E6F1FB;--food:#1D9E75;--bad:#D85A30;--mid:#B4B2A9;--me:#EF9F27;--reef:#9FE1CB;--reefS:#0F6E56;--reefT:#085041;--hunter:#2C2C2A;--patch:#F1EFE8;--ink:#042C53}
+@media (prefers-color-scheme:dark){:root{--bg:#1F1E1D;--card:#2C2C2A;--tint:#2C2C2A;--text:#F1EFE8;--text2:#B4B2A9;--border:rgba(255,255,255,.16);--ok:#5DCAA5;--risk:#FAC775;--btn:#F1EFE8;--btnText:#1F1E1D;--water:#042C53;--food:#5DCAA5;--bad:#F0997B;--mid:#888780;--me:#FAC775;--reef:#085041;--reefS:#5DCAA5;--reefT:#9FE1CB;--hunter:#F1EFE8;--patch:#2C2C2A;--ink:#E6F1FB}}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -29,11 +29,63 @@ body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,
 #wrap{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
 #c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
 #ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px}
-.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;max-width:320px;text-align:center}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;width:100%;max-width:340px;max-height:100%;overflow:auto;text-align:center;animation:rise .35s ease-out}
 #msg{font-size:18px;font-weight:500;margin-bottom:8px}
-#sub{font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:14px}
+#sub{font-size:14px;line-height:1.55;color:var(--text2);margin-bottom:14px}
 button{font:inherit;font-size:15px;font-weight:500;padding:10px 28px;border:0;border-radius:8px;background:var(--btn);color:var(--btnText);cursor:pointer}
 button:active{transform:scale(.98)}
+button:focus-visible{outline:2px solid var(--food);outline-offset:2px}
+.view[hidden]{display:none}
+.viewport{overflow:hidden;touch-action:pan-y}
+.track{display:flex;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.slide{flex:0 0 100%;min-width:0}
+.step{font-size:12px;color:var(--text2);margin-bottom:6px;letter-spacing:.02em}
+.art{display:block;width:100%;height:auto;aspect-ratio:2/1;border-radius:10px;background:var(--water);margin-bottom:12px}
+.slide h2{font-size:18px;font-weight:500;margin:0 0 6px}
+.slide p{font-size:14px;line-height:1.55;color:var(--text2);margin:0}
+.keys{display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:12px;color:var(--text2)}
+.keys i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.chain{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:10px}
+.chain span{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--tint);color:var(--text2)}
+.chain span:first-child{background:var(--me);color:#1F1E1D}
+.chain span:last-child{background:var(--text);color:var(--bg)}
+.dots{display:flex;justify-content:center;gap:2px;margin:14px 0 12px}
+.dots button{width:22px;height:20px;padding:6px 7px;border-radius:999px;background:var(--border);background-clip:content-box;transition:width .25s}
+.dots button[aria-current="true"]{width:34px;background-color:var(--text)}
+.nav{display:flex;gap:8px}
+.nav button{flex:1;padding:10px 12px}
+button.ghost{background:transparent;color:var(--text2);box-shadow:inset 0 0 0 1px var(--border)}
+button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-size:13px;font-weight:400;text-decoration:underline;text-underline-offset:3px}
+.hint{font-size:12px;color:var(--text2);margin-top:10px}
+#start .art{margin-bottom:14px}
+.bestline{font-size:13px;color:var(--text2);margin:-6px 0 14px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.art [class]{transform-box:fill-box;transform-origin:center}
+.bob{animation:bob 2.4s ease-in-out infinite}
+.bob2{animation:bob 3.1s ease-in-out infinite reverse}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.a1-me{animation:a1me 3.2s ease-in-out infinite}
+@keyframes a1me{0%{transform:translateX(0);opacity:0}8%{opacity:1}42%{transform:translateX(68px)}80%{transform:translateX(68px);opacity:1}92%,100%{transform:translateX(68px);opacity:0}}
+.a1-food{animation:a1food 3.2s ease-in-out infinite}
+@keyframes a1food{0%,38%{transform:scale(1);opacity:1}46%,90%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.a1-pts{animation:a1pts 3.2s ease-out infinite}
+@keyframes a1pts{0%,42%{opacity:0;transform:translateY(0)}50%{opacity:1}80%,100%{opacity:0;transform:translateY(-14px)}}
+.a2-me{animation:a2me 3.6s ease-in-out infinite}
+@keyframes a2me{0%{transform:translate(0,0);opacity:0}8%{opacity:1}45%,85%{transform:translate(52px,40px);opacity:1}95%,100%{transform:translate(52px,40px);opacity:0}}
+.a2-lock{transform-origin:left center;animation:a2lock 3.6s ease-in-out infinite}
+@keyframes a2lock{0%,45%{transform:scaleX(.5)}55%,100%{transform:scaleX(1)}}
+.a2-risk{transform-origin:right center;animation:a2risk 3.6s ease-in-out infinite}
+@keyframes a2risk{0%,45%{transform:scaleX(1)}55%,100%{transform:scaleX(0)}}
+.a2-pts{animation:a2pts 3.6s ease-out infinite}
+@keyframes a2pts{0%,46%{opacity:0;transform:translateY(0)}54%{opacity:1}85%,100%{opacity:0;transform:translateY(-10px)}}
+.a2-home{animation:a2home 3.6s ease-out infinite}
+@keyframes a2home{0%,44%{transform:scale(1)}50%{transform:scale(1.12)}60%,100%{transform:scale(1)}}
+.a3-me{animation:a3me 3.6s ease-in-out infinite}
+@keyframes a3me{0%{transform:scale(.55)}50%,100%{transform:scale(1.25)}}
+.a3-ring{animation:a3ring 3.6s ease-out infinite}
+@keyframes a3ring{0%,48%{opacity:0;transform:scale(.8)}58%{opacity:1;transform:scale(1.05)}70%,100%{opacity:1;transform:scale(1)}}
+@media (max-height:560px){.art{aspect-ratio:3/1}.slide p{font-size:13px}.chain{display:none}}
+@media (prefers-reduced-motion:reduce){.art *,.panel,.track{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -53,10 +105,70 @@ button:active{transform:scale(.98)}
   <div id="wrap">
     <canvas id="c"></canvas>
     <div id="ov">
-      <div class="panel">
-        <div id="msg">Become the leviathan</div>
-        <div id="sub">Eat green fish to grow. Orange ones eat you.<br>Touch home to lock in your growth.<br>Outgrow the hunter, eat it, and become it.</div>
-        <button id="go">Start</button>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="f" viewBox="-20 -10 40 20"><ellipse cx="2" cy="0" rx="12" ry="7.8"/><path d="M-7.5 0-18-6.5v13z"/><circle cx="8.8" cy="-1.2" r="1.5" fill="var(--water)"/></symbol>
+        <symbol id="h" viewBox="-20 -10 40 20"><ellipse cx="2" cy="0" rx="12" ry="7.8"/><path d="M-7.5 0-18-6.5v13z"/><ellipse cx="7" cy="-3.2" rx="3" ry="1.3" fill="var(--patch)" transform="rotate(-17 7 -3.2)"/><ellipse cx="3" cy="5" rx="7" ry="1.8" fill="var(--patch)"/></symbol>
+      </svg>
+      <div class="panel" id="panel">
+        <div class="view" id="onb" role="region" aria-roledescription="carousel" aria-label="How to play">
+          <div class="viewport" id="vp">
+            <div class="track" id="track">
+              <section class="slide" aria-label="Step 1 of 3">
+                <div class="step">1 of 3</div>
+                <svg class="art" viewBox="0 0 240 120" aria-hidden="true">
+                  <g class="bob2"><use href="#f" x="176" y="20" width="28" height="14" fill="var(--mid)"/></g>
+                  <g class="bob"><g transform="translate(188 86) scale(-1 1)"><use href="#f" x="-32" y="-16" width="64" height="32" fill="var(--bad)"/></g></g>
+                  <g class="a1-food"><use href="#f" x="107" y="54" width="22" height="11" fill="var(--food)"/></g>
+                  <g class="a1-me"><use href="#f" x="22" y="51" width="36" height="18" fill="var(--me)"/></g>
+                  <text class="a1-pts" x="118" y="44" text-anchor="middle" font-size="11" font-weight="500" fill="var(--food)">+11</text>
+                </svg>
+                <h2>Eat green, flee orange</h2>
+                <p>Green fish are smaller than you. Eat them to grow. Orange fish are bigger and will eat you.</p>
+                <div class="keys"><span><i style="background:var(--food)"></i>Eat</span><span><i style="background:var(--mid)"></i>Ignore</span><span><i style="background:var(--bad)"></i>Avoid</span></div>
+              </section>
+              <section class="slide" aria-label="Step 2 of 3">
+                <div class="step">2 of 3</div>
+                <svg class="art" viewBox="0 0 240 120" aria-hidden="true">
+                  <rect x="60" y="12" width="120" height="6" rx="3" fill="var(--card)"/>
+                  <rect class="a2-lock" x="60" y="12" width="80" height="6" rx="3" fill="var(--ok)"/>
+                  <rect class="a2-risk" x="100" y="12" width="40" height="6" rx="0" fill="var(--risk)"/>
+                  <g class="a2-home"><circle cx="120" cy="92" r="22" fill="var(--reef)" stroke="var(--reefS)" stroke-width="1.5"/></g>
+                  <text x="120" y="95.5" text-anchor="middle" font-size="10" font-weight="500" fill="var(--reefT)">Home</text>
+                  <g class="a2-me"><use href="#f" x="50" y="43" width="36" height="18" fill="var(--me)"/></g>
+                  <text class="a2-pts" x="120" y="60" text-anchor="middle" font-size="11" font-weight="500" fill="var(--ink)">Locked in +86</text>
+                </svg>
+                <h2>Bank it or bust</h2>
+                <p>Growth stays at risk until you touch home. If you get eaten, you drop back to your last lock. Stay out longer for a bigger multiplier.</p>
+              </section>
+              <section class="slide" aria-label="Step 3 of 3">
+                <div class="step">3 of 3</div>
+                <svg class="art" viewBox="0 0 240 120" aria-hidden="true">
+                  <g class="a3-ring"><circle cx="164" cy="60" r="44" fill="none" stroke="var(--food)" stroke-width="2"/></g>
+                  <g class="bob"><g transform="translate(164 60) scale(-1 1)"><use href="#h" x="-36" y="-18" width="72" height="36" fill="var(--hunter)"/></g></g>
+                  <g class="a3-me"><use href="#f" x="34" y="44" width="64" height="32" fill="var(--me)"/></g>
+                </svg>
+                <h2>Eat what hunts you</h2>
+                <p>A hunter shows up once you are mid-sized. Keep growing until a green ring appears around it, then eat it to become it.</p>
+                <div class="chain"><span>Minnow</span><span>Perch</span><span>Barracuda</span><span>Shark</span><span>Orca</span><span>Whale</span><span>Leviathan</span></div>
+              </section>
+            </div>
+          </div>
+          <div class="dots" id="dots"><button aria-label="Step 1"></button><button aria-label="Step 2"></button><button aria-label="Step 3"></button></div>
+          <div class="nav"><button class="ghost" id="onbBack">Skip</button><button id="onbNext">Next</button></div>
+          <div class="hint" id="hint"></div>
+        </div>
+        <div class="view" id="start" hidden>
+          <svg class="art" viewBox="0 0 240 120" aria-hidden="true">
+            <g class="bob2"><use href="#f" x="30" y="66" width="22" height="11" fill="var(--food)"/></g>
+            <g class="bob"><use href="#f" x="96" y="44" width="56" height="28" fill="var(--me)"/></g>
+            <g class="bob2"><g transform="translate(196 34) scale(-1 1)"><use href="#f" x="-17" y="-8.5" width="34" height="17" fill="var(--bad)"/></g></g>
+            <g class="bob"><use href="#f" x="178" y="84" width="20" height="10" fill="var(--food)"/></g>
+          </svg>
+          <div id="msg">Become the leviathan</div>
+          <div id="sub" class="bestline">Six evolutions, from a 3 cm minnow to a 284 m leviathan.</div>
+          <button id="go">Start</button>
+          <div><button class="link" id="how">How to play</button></div>
+        </div>
       </div>
     </div>
   </div>
@@ -161,6 +273,7 @@ button:active{transform:scale(.98)}
     el('msg').textContent = 'You are the leviathan';
     el('sub').textContent = 'From ' + CFG.startLengthCm + ' cm to ' + fmtLen() + ' in ' + fmtTime() + ', with a score of ' + banked + '.';
     el('go').textContent = 'Play again';
+    showView('start');
     ov.style.display = 'flex';
   }
   function eatBoss() {
@@ -356,14 +469,59 @@ button:active{transform:scale(.98)}
   c.addEventListener('pointerup', up);
   c.addEventListener('pointercancel', up);
 
-  el('go').addEventListener('click', function () {
+  function startGame() {
     tier = 0; lock = CFG.startSize; banked = 0; haul = 0; streak = 0; eaten = 0; tut = 0; elapsed = 0;
     boss = null; bossWait = 0; told = false; pops = []; fish = []; joy = null;
     me = { x: home.x, y: home.y, s: CFG.startSize, a: -Math.PI / 2, safe: 1.2 };
     goHome();
     for (let i = 0; i < 10; i++) spawn(true);
     state = 'play'; ov.style.display = 'none';
+  }
+  el('go').addEventListener('click', startGame);
+
+  // Onboarding: three one-idea cards, shown before the first game and from "How to play".
+  const track = el('track'), dots = el('dots').children, back = el('onbBack'), next = el('onbNext');
+  let slide = 0;
+  const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  el('hint').textContent = coarse ? 'Drag anywhere on the sea to swim.' : 'Move your mouse over the sea to swim.';
+  function showView(v) {
+    el('onb').hidden = v !== 'onb'; el('start').hidden = v !== 'start';
+    el('panel').style.animation = 'none'; void el('panel').offsetWidth; el('panel').style.animation = '';
+  }
+  function goSlide(i) {
+    slide = Math.max(0, Math.min(dots.length - 1, i));
+    track.style.transform = 'translateX(' + (-100 * slide) + '%)';
+    for (let k = 0; k < dots.length; k++) dots[k].setAttribute('aria-current', k === slide ? 'true' : 'false');
+    back.textContent = slide === 0 ? 'Skip' : 'Back';
+    next.textContent = slide === dots.length - 1 ? 'Start swimming' : 'Next';
+    el('hint').style.visibility = slide === dots.length - 1 ? 'visible' : 'hidden';
+  }
+  function finishOnb() { try { localStorage.setItem('bob-onboarded', '1'); } catch (e) {} startGame(); }
+  next.addEventListener('click', function () { slide === dots.length - 1 ? finishOnb() : goSlide(slide + 1); });
+  back.addEventListener('click', function () { slide === 0 ? finishOnb() : goSlide(slide - 1); });
+  for (let k = 0; k < dots.length; k++) dots[k].addEventListener('click', function () { goSlide(k); });
+  el('how').addEventListener('click', function () { showView('onb'); goSlide(0); next.focus(); });
+  let sx = null;
+  el('vp').addEventListener('pointerdown', function (e) { sx = e.clientX; });
+  el('vp').addEventListener('pointerup', function (e) {
+    if (sx === null) return;
+    const d = e.clientX - sx; sx = null;
+    if (Math.abs(d) > 40) goSlide(slide + (d < 0 ? 1 : -1));
   });
+  window.addEventListener('keydown', function (e) {
+    if (ov.style.display === 'none') return;
+    if (!el('onb').hidden) {
+      if (e.key === 'ArrowRight') goSlide(slide + 1);
+      else if (e.key === 'ArrowLeft') goSlide(slide - 1);
+      else if (e.key === 'Escape') finishOnb();
+      else return;
+      e.preventDefault();
+    }
+  });
+  let seen = false;
+  try { seen = localStorage.getItem('bob-onboarded') === '1'; } catch (e) {}
+  if (best > 0) el('sub').textContent = 'Your best score is ' + best + '. Beat it.';
+  showView(seen ? 'start' : 'onb'); goSlide(0);
 
   window.addEventListener('resize', size);
   size();
