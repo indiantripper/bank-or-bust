@@ -186,7 +186,8 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     growth: 0.13, growthSlowPerStage: 0.15,
     comboStep: 3, comboMax: 8, hunterPoints: 300,
     startLengthCm: 3, lengthPerStage: 4.6,
-    baseFish: 11
+    baseFish: 11,
+    touchGain: 1, maxLead: 400
   };
   const NAMES = ['Minnow', 'Perch', 'Barracuda', 'Shark', 'Orca', 'Whale', 'Leviathan'];
   const LAST = NAMES.length - 2;
@@ -203,7 +204,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
 
   const home = { x: 0, y: 0, r: 40 }, tgt = { x: 0, y: 0 };
   let W = 680, H = 520, dpr = 1, state = 'idle';
-  let fish = [], pops = [], me = null, boss = null, bossWait = 0, joy = null, useT = false;
+  let fish = [], pops = [], me = null, boss = null, bossWait = 0, drag = null, useT = false;
   let tier = 0, lock = CFG.startSize, banked = 0, haul = 0, streak = 0, eaten = 0, tut = 0;
   let elapsed = 0, evoT = 0, shake = 0, last = 0, told = false, best = 0;
   try { best = +localStorage.getItem('bob-best') || 0; } catch (e) {}
@@ -241,7 +242,10 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
       r, v: (45 + Math.random() * 70) * (1 + 0.06 * tier) * (left ? 1 : -1), ph: Math.random() * 6.28
     });
   }
-  function goHome() { me.x = home.x; me.y = home.y; tgt.x = home.x; tgt.y = home.y; useT = false; }
+  function goHome() { me.x = home.x; me.y = home.y; tgt.x = home.x; tgt.y = home.y; useT = false; rebase(); }
+  // Touch steering is relative: the fish copies the finger's movement from where the drag started.
+  // rebase() re-anchors the drag to the current target so a jump (bust, evolve) never snaps the fish.
+  function rebase() { if (drag) { drag.fx = tgt.x; drag.fy = tgt.y; drag.px = drag.lx; drag.py = drag.ly; } }
 
   // Banking locks in size and points. A bust drops you back to the last lock.
   function bank() {
@@ -292,7 +296,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
       v: (45 + Math.random() * 70) * (f.v > 0 ? 1 : -1), ph: f.ph
     })).filter(f => f.r >= 3);
     me.s = CFG.startSize; lock = CFG.startSize; me.safe = 1.5; bossWait = 2;
-    tgt.x = me.x; tgt.y = me.y; useT = false; state = 'play';
+    tgt.x = me.x; tgt.y = me.y; useT = !!drag; state = 'play'; rebase();
   }
 
   function update(dt) {
@@ -310,16 +314,9 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
 
     elapsed += dt;
     const sp = CFG.speed - (me.s - CFG.startSize) * CFG.slowPerSize;
-    if (joy) {
-      const m = Math.hypot(joy.dx, joy.dy);
-      if (m > 6) {
-        const k = Math.min(1, m / 36);
-        me.x += joy.dx / m * sp * k * dt; me.y += joy.dy / m * sp * k * dt;
-        me.a = Math.atan2(joy.dy, joy.dx);
-      }
-    } else if (useT) {
+    if (useT) {
       const dx = tgt.x - me.x, dy = tgt.y - me.y, d = Math.hypot(dx, dy);
-      if (d > 3) { const st = Math.min(d, sp * dt); me.x += dx / d * st; me.y += dy / d * st; me.a = Math.atan2(dy, dx); }
+      if (d > 0.5) { const st = Math.min(d, sp * dt); me.x += dx / d * st; me.y += dy / d * st; if (d > 2) me.a = Math.atan2(dy, dx); }
     }
     me.x = Math.max(me.s, Math.min(W - me.s, me.x));
     me.y = Math.max(me.s, Math.min(H - me.s, me.y));
@@ -409,12 +406,9 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
       x.fillStyle = P.ink; x.font = '500 13px ' + font;
       x.fillText(haul + (mult() > 1 ? '  x' + mult() : ''), Math.max(40, Math.min(W - 40, me.x)), Math.max(14, me.y - me.s - 14));
     }
-    if (joy && state === 'play') {
-      x.strokeStyle = P.mid; x.lineWidth = 1.5;
-      x.beginPath(); x.arc(joy.ax, joy.ay, 36, 0, 6.283); x.stroke();
-      const m = Math.hypot(joy.dx, joy.dy) || 1, k = Math.min(36, m) / m;
-      x.fillStyle = P.mid;
-      x.beginPath(); x.arc(joy.ax + joy.dx * k, joy.ay + joy.dy * k, 10, 0, 6.283); x.fill();
+    if (drag && state === 'play' && Math.hypot(tgt.x - me.x, tgt.y - me.y) > me.s + 6) {
+      x.strokeStyle = P.mid; x.lineWidth = 1.5; x.setLineDash([3, 4]);
+      x.beginPath(); x.arc(tgt.x, tgt.y, 7, 0, 6.283); x.stroke(); x.setLineDash([]);
     }
     x.font = '500 14px ' + font;
     for (const p of pops) {
@@ -453,25 +447,40 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     requestAnimationFrame(frame);
   }
 
-  // Input: mouse follows the pointer, touch is a drag-anywhere joystick.
+  // Input: the mouse leads the fish; touch drags it 1:1 from anywhere, so a thumb never covers it.
   function pos(e) { const b = c.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+  function steer(p) {
+    drag.lx = p.x; drag.ly = p.y;
+    let tx = drag.fx + (p.x - drag.px) * CFG.touchGain, ty = drag.fy + (p.y - drag.py) * CFG.touchGain;
+    const cx = Math.max(me.s, Math.min(W - me.s, tx)), cy = Math.max(me.s, Math.min(H - me.s, ty));
+    let rebased = cx !== tx || cy !== ty; tx = cx; ty = cy;
+    const lx = tx - me.x, ly = ty - me.y, l = Math.hypot(lx, ly);
+    if (l > CFG.maxLead) { tx = me.x + lx / l * CFG.maxLead; ty = me.y + ly / l * CFG.maxLead; rebased = true; }
+    tgt.x = tx; tgt.y = ty; useT = true;
+    if (rebased) rebase();
+  }
   c.addEventListener('pointerdown', function (e) {
     const p = pos(e);
-    if (e.pointerType === 'mouse') { tgt.x = p.x; tgt.y = p.y; useT = true; }
-    else { joy = { ax: p.x, ay: p.y, dx: 0, dy: 0 }; useT = false; try { c.setPointerCapture(e.pointerId); } catch (err) {} }
+    if (e.pointerType === 'mouse') { tgt.x = p.x; tgt.y = p.y; useT = true; return; }
+    if (!me || (drag && drag.id !== e.pointerId)) return;
+    e.preventDefault();
+    tgt.x = me.x; tgt.y = me.y;
+    drag = { id: e.pointerId, fx: me.x, fy: me.y, px: p.x, py: p.y, lx: p.x, ly: p.y };
+    useT = true;
+    try { c.setPointerCapture(e.pointerId); } catch (err) {}
   });
   c.addEventListener('pointermove', function (e) {
     const p = pos(e);
     if (e.pointerType === 'mouse') { tgt.x = p.x; tgt.y = p.y; useT = true; }
-    else if (joy) { joy.dx = p.x - joy.ax; joy.dy = p.y - joy.ay; }
+    else if (drag && drag.id === e.pointerId && me) steer(p);
   });
-  function up(e) { if (e.pointerType !== 'mouse') joy = null; }
+  function up(e) { if (drag && drag.id === e.pointerId) drag = null; }
   c.addEventListener('pointerup', up);
   c.addEventListener('pointercancel', up);
 
   function startGame() {
     tier = 0; lock = CFG.startSize; banked = 0; haul = 0; streak = 0; eaten = 0; tut = 0; elapsed = 0;
-    boss = null; bossWait = 0; told = false; pops = []; fish = []; joy = null;
+    boss = null; bossWait = 0; told = false; pops = []; fish = []; drag = null;
     me = { x: home.x, y: home.y, s: CFG.startSize, a: -Math.PI / 2, safe: 1.2 };
     goHome();
     for (let i = 0; i < 10; i++) spawn(true);
