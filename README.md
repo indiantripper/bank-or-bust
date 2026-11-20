@@ -14,7 +14,7 @@ You start as a 3 cm minnow. Six evolutions later you are a 284 m leviathan.
 
 Each time you evolve, the camera zooms out. The fish that used to chase you are now small enough to eat.
 
-**Controls:** drag anywhere on mobile (it works as a joystick), or move the mouse on desktop.
+**Controls:** on mobile, drag anywhere: your fish copies your finger's movement, so your thumb never covers it. On desktop, move the mouse.
 
 ## The core tension
 
@@ -53,6 +53,7 @@ Every number that affects feel is in the `CFG` object at the top of the script i
 | `growth`, `growthSlowPerStage` | How fast you grow, and how much longer each later stage takes |
 | `comboStep`, `comboMax` | Fish per multiplier step, and the multiplier cap |
 | `hunterPoints` | Base points for eating the hunter |
+| `touchGain`, `maxLead` | How far the fish moves per pixel of finger movement, and how far ahead of the fish the touch target may run |
 | `eatRatio`, `dangerRatio` | How much smaller a fish must be to eat it, and how much bigger to eat you |
 | `startLengthCm`, `lengthPerStage` | The length readout and how much it scales per stage |
 | `baseFish` | How many fish are in the sea |
