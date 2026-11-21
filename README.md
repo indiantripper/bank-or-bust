@@ -21,6 +21,8 @@ Each time you evolve, the camera zooms out. The fish that used to chase you are 
 - Bigger means slower, and the hunter is faster than you once you are large.
 - Every third fish eaten without banking raises your multiplier, up to x8.
 - Banking is safe but resets the multiplier. Staying out scores more and risks it all.
+- Every level is harder: the hunter arrives sooner, swims and turns faster, and comes back quicker after you hide at home. Fish are faster, easy meals are rarer, and you grow more slowly.
+- Hard, not impossible: there are always a few fish you can eat, and each time you get eaten the current level eases slightly (up to three times).
 
 ## Stages
 
@@ -48,9 +50,11 @@ Every number that affects feel is in the `CFG` object at the top of the script i
 | --- | --- |
 | `speed`, `slowPerSize` | Your swim speed, and how much each unit of size slows you |
 | `startSize`, `maxSize` | Your size at the start of each stage, and the size cap |
-| `hunterAppearsAt`, `eatHunterAt` | Size at which the hunter arrives, and size at which you can eat it |
-| `hunterSpeed`, `hunterSpeedPerStage`, `hunterTurn`, `hunterRadius` | How fast and how big the hunter is, and how quickly it turns |
-| `growth`, `growthSlowPerStage` | How fast you grow, and how much longer each later stage takes |
+| `eatHunterAt` | Size at which you can eat the hunter |
+| `growth` | How fast you grow from each fish |
+| `hunterAppearsAt`, `hunterSpeed`, `hunterTurn`, `hunterReturn` | Difficulty ramp, as [first level, last level]: when the hunter arrives, its speed and turning, and how soon it returns after you hide |
+| `growthSlow`, `fishSpeed`, `foodShare`, `minFood` | Difficulty ramp: how much slower you grow, how fast fish swim, the share of fish you can eat, and the guaranteed minimum of edible fish |
+| `mercyMax`, `mercyHunter`, `mercyFood` | How much a level eases after each bust, and for how many busts |
 | `comboStep`, `comboMax` | Fish per multiplier step, and the multiplier cap |
 | `hunterPoints` | Base points for eating the hunter |
 | `touchGain`, `maxLead` | How far the fish moves per pixel of finger movement, and how far ahead of the fish the touch target may run |
