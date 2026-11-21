@@ -22,7 +22,18 @@ Each time you evolve, the camera zooms out. The fish that used to chase you are 
 - Every third fish eaten without banking raises your multiplier, up to x8.
 - Banking is safe but resets the multiplier. Staying out scores more and risks it all.
 - Every level is harder: the hunter arrives sooner, swims and turns faster, and comes back quicker after you hide at home. Fish are faster, easy meals are rarer, and you grow more slowly.
-- Hard, not impossible: there are always a few fish you can eat, and each time you get eaten the current level eases slightly (up to three times).
+- Hard, not impossible: there are always a few fish you can eat, home is always safe, and each time you get eaten the current level eases slightly (up to five times).
+
+## New rules by level
+
+Each rule starts gently at its level and reaches full strength by the last level.
+
+| From level | Rule | Why |
+| --- | --- | --- |
+| 2 | **Hunger.** You slowly shrink away from food, and faster at home. | Sitting at home costs growth. |
+| 3 | **Home moves after you lock in.** A dashed ring shows where it is going first. | Every cycle crosses open water. |
+| 4 | **Some orange fish hunt you** (dark stripe), turning slowly so you can dodge. Fish also swim in waves and diagonals. | Avoiding fish becomes the skill. |
+| 5 | **The hunter waits outside home** for a few seconds instead of leaving. | Hiding no longer resets the threat. |
 
 ## Stages
 
@@ -55,6 +66,7 @@ Every number that affects feel is in the `CFG` object at the top of the script i
 | `hunterAppearsAt`, `hunterSpeed`, `hunterTurn`, `hunterReturn` | Difficulty ramp, as [first level, last level]: when the hunter arrives, its speed and turning, and how soon it returns after you hide |
 | `growthSlow`, `fishSpeed`, `foodShare`, `minFood` | Difficulty ramp: how much slower you grow, how fast fish swim, the share of fish you can eat, and the guaranteed minimum of edible fish |
 | `mercyMax`, `mercyHunter`, `mercyFood` | How much a level eases after each bust, and for how many busts |
+| `hunger`, `hungerHome`, `homeWarn`, `oddSwim`, `huntShare`, `huntTurn`, `huntRange`, `circleTime` | Strength of the level rules above, at full strength |
 | `comboStep`, `comboMax` | Fish per multiplier step, and the multiplier cap |
 | `hunterPoints` | Base points for eating the hunter |
 | `touchGain`, `maxLead` | How far the fish moves per pixel of finger movement, and how far ahead of the fish the touch target may run |
