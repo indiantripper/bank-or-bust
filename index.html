@@ -179,11 +179,16 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
 
   // Tuning: every number that changes how the game feels lives here.
   const CFG = {
-    startSize: 10, maxSize: 46, eatHunterAt: 44, hunterAppearsAt: 22,
+    startSize: 10, maxSize: 46, eatHunterAt: 44,
     eatRatio: 0.9, dangerRatio: 1.15,
     speed: 270, slowPerSize: 4.4,
-    hunterSpeed: 140, hunterSpeedPerStage: 8, hunterTurn: 1.9, hunterRadius: 38,
-    growth: 0.13, growthSlowPerStage: 0.15,
+    hunterRadius: 38,
+    growth: 0.13,
+    // Difficulty ramp: [first level, last level]. Values in between are blended by level.
+    hunterAppearsAt: [26, 16], hunterSpeed: [120, 205], hunterTurn: [1.5, 2.9], hunterReturn: [4, 1.5],
+    growthSlow: [1, 2.6], fishSpeed: [1, 1.8], foodShare: [0.62, 0.3], minFood: [4, 2],
+    // Fairness: always a few fish you can eat, and a level eases a little after each bust (up to 3).
+    mercyMax: 3, mercyHunter: 0.07, mercyFood: 0.05,
     comboStep: 3, comboMax: 8, hunterPoints: 300,
     startLengthCm: 3, lengthPerStage: 4.6,
     baseFish: 11,
@@ -206,7 +211,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
   let W = 680, H = 520, dpr = 1, state = 'idle';
   let fish = [], pops = [], me = null, boss = null, bossWait = 0, drag = null, useT = false;
   let tier = 0, lock = CFG.startSize, banked = 0, haul = 0, streak = 0, eaten = 0, tut = 0;
-  let elapsed = 0, evoT = 0, shake = 0, last = 0, told = false, best = 0;
+  let elapsed = 0, evoT = 0, shake = 0, last = 0, told = false, best = 0, mercy = 0;
   try { best = +localStorage.getItem('bob-best') || 0; } catch (e) {}
   el('best').textContent = best;
 
@@ -220,6 +225,10 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     home.y = H - 52;
     if (me) { me.x = Math.min(W - me.s, me.x); me.y = Math.min(H - me.s, me.y); }
   }
+  // Blend a [first, last] range by level. The 0.7 curve makes the early levels step up sooner, so the ramp is steady, not a cliff.
+  function lv(range) { return range[0] + (range[1] - range[0]) * Math.pow(Math.min(tier, LAST) / LAST, 0.7); }
+  function foodShare() { return Math.min(0.75, lv(CFG.foodShare) + CFG.mercyFood * mercy); }
+  function fishSpeed() { return (45 + Math.random() * 70) * lv(CFG.fishSpeed); }
   function mult() { return Math.min(CFG.comboMax, 1 + Math.floor(streak / CFG.comboStep)); }
   function pop(t, px, py, col) { pops.push({ t, x: Math.max(80, Math.min(W - 80, px)), y: py, col, life: 1.4 }); }
   function fmtLen() {
@@ -232,14 +241,14 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
   }
   function fmtTime() { const t = Math.floor(elapsed); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 
-  function spawn(init) {
+  function spawn(init, food) {
     const left = Math.random() < 0.5, s = me ? me.s : CFG.startSize;
-    let r = Math.random() < 0.55 ? s * (0.35 + 0.5 * Math.random()) : 8 + 40 * Math.pow(Math.random(), 1.6);
+    let r = food || Math.random() < foodShare() ? s * (0.35 + 0.5 * Math.random()) : 8 + 40 * Math.pow(Math.random(), 1.6);
     r = Math.max(4, Math.min(48, r));
     fish.push({
       x: init ? Math.random() * W : (left ? -r * 2 : W + r * 2),
       y: 24 + Math.random() * Math.max(60, H - 150),
-      r, v: (45 + Math.random() * 70) * (1 + 0.06 * tier) * (left ? 1 : -1), ph: Math.random() * 6.28
+      r, v: fishSpeed() * (left ? 1 : -1), ph: Math.random() * 6.28
     });
   }
   function goHome() { me.x = home.x; me.y = home.y; tgt.x = home.x; tgt.y = home.y; useT = false; rebase(); }
@@ -257,14 +266,14 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
   function bust() {
     pop('Bust, growth lost', me.x, me.y - 24, P.bad);
     haul = 0; streak = 0; told = lock >= CFG.eatHunterAt;
-    shake = 0.35; boss = null; bossWait = 4;
+    shake = 0.35; boss = null; bossWait = 4; mercy = Math.min(CFG.mercyMax, mercy + 1);
     me.s = lock; me.safe = 1.6; goHome();
   }
   function eat(f) {
     eaten++; streak++;
     const pts = Math.round(f.r) * mult() * (tier + 1);
     haul += pts;
-    me.s = Math.min(CFG.maxSize, me.s + f.r * CFG.growth / (1 + CFG.growthSlowPerStage * tier));
+    me.s = Math.min(CFG.maxSize, me.s + f.r * CFG.growth / lv(CFG.growthSlow));
     pop('+' + pts, f.x, f.y - f.r - 4, P.food);
     if (tut === 0 && eaten >= 3) tut = 1;
     if (me.s >= CFG.eatHunterAt && !told) { told = true; pop('You can eat the ' + NAMES[tier + 1], me.x, me.y - me.s - 30, P.ink); }
@@ -293,9 +302,10 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     tier++;
     fish = fish.map(f => ({
       x: me.x + (f.x - me.x) * K, y: me.y + (f.y - me.y) * K, r: f.r * K,
-      v: (45 + Math.random() * 70) * (f.v > 0 ? 1 : -1), ph: f.ph
+      v: fishSpeed() * (f.v > 0 ? 1 : -1), ph: f.ph
     })).filter(f => f.r >= 3);
-    me.s = CFG.startSize; lock = CFG.startSize; me.safe = 1.5; bossWait = 2;
+    me.s = CFG.startSize; lock = CFG.startSize; me.safe = 1.5; bossWait = 2; mercy = 0;
+    pop('Level ' + (tier + 1) + ': the ' + NAMES[tier + 1] + ' is faster', me.x, me.y - 40, P.ink);
     tgt.x = me.x; tgt.y = me.y; useT = !!drag; state = 'play'; rebase();
   }
 
@@ -311,6 +321,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     const want = Math.round((CFG.baseFish + (state === 'play' ? tier : 0)) * area);
     while (fish.length < want) spawn(false);
     if (state !== 'play') return;
+    if (fish.filter(f => f.r <= me.s * CFG.eatRatio).length < Math.round(lv(CFG.minFood))) spawn(false, true);
 
     elapsed += dt;
     const sp = CFG.speed - (me.s - CFG.startSize) * CFG.slowPerSize;
@@ -325,7 +336,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
     const inHome = Math.hypot(me.x - home.x, me.y - home.y) < home.r;
     if (inHome && (haul > 0 || me.s > lock)) bank();
     if (inHome && boss && !boss.leave && me.s < CFG.eatHunterAt) {
-      boss.leave = true; boss.a = boss.x < W / 2 ? Math.PI : 0; bossWait = 3;
+      boss.leave = true; boss.a = boss.x < W / 2 ? Math.PI : 0; bossWait = lv(CFG.hunterReturn);
     }
 
     for (let i = fish.length - 1; i >= 0; i--) {
@@ -336,7 +347,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
 
     if (!boss) {
       bossWait -= dt;
-      if (me.s >= CFG.hunterAppearsAt && bossWait <= 0 && !inHome) {
+      if (me.s >= lv(CFG.hunterAppearsAt) && bossWait <= 0 && !inHome) {
         const left = me.x > W / 2;
         boss = { x: left ? -70 : W + 70, y: 50 + Math.random() * Math.max(40, H - 220), a: left ? 0 : Math.PI, r: CFG.hunterRadius, leave: false };
         pop(NAMES[tier + 1] + ' incoming', left ? 90 : W - 90, boss.y, P.bad);
@@ -345,9 +356,10 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
       if (!boss.leave) {
         let df = Math.atan2(me.y - boss.y, me.x - boss.x) - boss.a;
         df = Math.atan2(Math.sin(df), Math.cos(df));
-        boss.a += Math.max(-CFG.hunterTurn * dt, Math.min(CFG.hunterTurn * dt, df));
+        const turn = lv(CFG.hunterTurn) * dt;
+        boss.a += Math.max(-turn, Math.min(turn, df));
       }
-      const bs = CFG.hunterSpeed + CFG.hunterSpeedPerStage * tier;
+      const bs = lv(CFG.hunterSpeed) * (1 - CFG.mercyHunter * mercy);
       boss.x += Math.cos(boss.a) * bs * dt; boss.y += Math.sin(boss.a) * bs * dt;
       if (boss.leave) { if (boss.x < -90 || boss.x > W + 90) boss = null; }
       else if (Math.hypot(boss.x - me.x, boss.y - me.y) < boss.r * 0.8 + me.s * 0.5) {
@@ -480,7 +492,7 @@ button.link{background:none;color:var(--text2);padding:8px;margin-top:6px;font-s
 
   function startGame() {
     tier = 0; lock = CFG.startSize; banked = 0; haul = 0; streak = 0; eaten = 0; tut = 0; elapsed = 0;
-    boss = null; bossWait = 0; told = false; pops = []; fish = []; drag = null;
+    boss = null; bossWait = 0; told = false; pops = []; fish = []; drag = null; mercy = 0;
     me = { x: home.x, y: home.y, s: CFG.startSize, a: -Math.PI / 2, safe: 1.2 };
     goHome();
     for (let i = 0; i < 10; i++) spawn(true);
